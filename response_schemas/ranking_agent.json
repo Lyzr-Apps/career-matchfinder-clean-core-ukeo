@@ -14,7 +14,8 @@
         "key_requirements": ["string"],
         "match_reasoning": "string",
         "application_url": "string",
-        "posted_date": "string"
+        "posted_date": "string",
+        "location": "string"
       }
     ],
     "total_found": "number",

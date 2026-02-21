@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
-import { callAIAgent } from '@/lib/aiAgent'
+import React, { useState, useCallback, useRef } from 'react'
+import { callAIAgent, uploadFiles } from '@/lib/aiAgent'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -26,6 +26,10 @@ import {
   HiUser,
   HiTag,
   HiFunnel,
+  HiMapPin,
+  HiDocumentText,
+  HiArrowUpTray,
+  HiCheckCircle,
 } from 'react-icons/hi2'
 
 // ---- Constants ----
@@ -41,6 +45,7 @@ interface RankedJob {
   match_reasoning: string
   application_url: string
   posted_date: string
+  location: string
 }
 
 interface JobSearchResponse {
@@ -57,9 +62,11 @@ interface FormData {
   yearsOfExperience: string
   targetDomain: string
   targetRole: string
+  preferredLocation: string
   skills: string[]
   targetCompanies: string[]
   appliedJobIds: string
+  resumeText: string
 }
 
 // ---- Sample Data ----
@@ -69,9 +76,11 @@ const SAMPLE_FORM: FormData = {
   yearsOfExperience: '6',
   targetDomain: 'FinTech',
   targetRole: 'Senior Product Manager',
+  preferredLocation: 'San Francisco, CA',
   skills: ['Product Strategy', 'Agile/Scrum', 'Data Analytics', 'Stakeholder Management', 'SQL', 'User Research'],
   targetCompanies: ['Stripe', 'Plaid', 'Robinhood'],
   appliedJobIds: 'JOB-2024-1234\nJOB-2024-5678',
+  resumeText: 'Resume uploaded: TechVista_PM_Resume.pdf\n\nSummary: 6 years of product management experience in SaaS and enterprise platforms. Led cross-functional teams of 15+ engineers. Shipped 3 major product launches generating $12M ARR. Proficient in SQL, Python, Tableau. MBA from Stanford GSB.',
 }
 
 const SAMPLE_RESULTS: JobSearchResponse = {
@@ -82,9 +91,10 @@ const SAMPLE_RESULTS: JobSearchResponse = {
       match_score: 94,
       job_description_summary: 'Lead the strategic direction of Stripe\'s core payments platform. Define product roadmap, work with engineering teams, and drive growth metrics for merchant-facing products.',
       key_requirements: ['5+ years PM experience', 'Payments/FinTech background', 'Data-driven decision making', 'Stakeholder management', 'SQL proficiency'],
-      match_reasoning: 'Strong alignment with candidate\'s product management experience and FinTech domain interest. SQL and data analytics skills directly match requirements. Years of experience exceeds minimum threshold.',
+      match_reasoning: 'Strong alignment with candidate\'s product management experience and FinTech domain interest. SQL and data analytics skills directly match requirements. Years of experience exceeds minimum threshold. Location matches preferred San Francisco area.',
       application_url: 'https://stripe.com/jobs/senior-pm-payments',
       posted_date: '2025-02-15',
+      location: 'San Francisco, CA',
     },
     {
       job_title: 'Product Manager, Risk & Compliance',
@@ -92,9 +102,10 @@ const SAMPLE_RESULTS: JobSearchResponse = {
       match_score: 87,
       job_description_summary: 'Own the product vision for Plaid\'s risk and compliance tools. Collaborate with cross-functional teams to build solutions that help financial institutions manage regulatory requirements.',
       key_requirements: ['4+ years PM experience', 'FinTech or banking experience', 'Regulatory knowledge preferred', 'Agile methodologies', 'Strong communication'],
-      match_reasoning: 'Excellent match on PM experience and Agile/Scrum skills. FinTech domain aligns perfectly. Stakeholder management experience is a strong plus. Slight gap in regulatory domain knowledge.',
+      match_reasoning: 'Excellent match on PM experience and Agile/Scrum skills. FinTech domain aligns perfectly. Stakeholder management experience is a strong plus. Located in San Francisco, matching preference.',
       application_url: 'https://plaid.com/careers/pm-risk',
       posted_date: '2025-02-10',
+      location: 'San Francisco, CA',
     },
     {
       job_title: 'Senior Product Manager, Brokerage',
@@ -102,9 +113,10 @@ const SAMPLE_RESULTS: JobSearchResponse = {
       match_score: 82,
       job_description_summary: 'Drive product strategy for Robinhood\'s brokerage platform. Focus on user acquisition, engagement, and retention through data-informed product decisions.',
       key_requirements: ['6+ years PM experience', 'Consumer product experience', 'Growth metrics expertise', 'A/B testing', 'User research skills'],
-      match_reasoning: 'Good match on years of experience and user research skills. Consumer product focus aligns with candidate profile. Some gap in specific brokerage/trading domain knowledge.',
+      match_reasoning: 'Good match on years of experience and user research skills. Consumer product focus aligns with candidate profile. Located in Menlo Park, close to preferred San Francisco location.',
       application_url: 'https://robinhood.com/careers/sr-pm-brokerage',
       posted_date: '2025-02-12',
+      location: 'Menlo Park, CA',
     },
     {
       job_title: 'Product Manager, Data Infrastructure',
@@ -112,9 +124,10 @@ const SAMPLE_RESULTS: JobSearchResponse = {
       match_score: 71,
       job_description_summary: 'Lead the data infrastructure product team at Square. Build scalable data pipelines and analytics platforms that power merchant insights and internal decision-making.',
       key_requirements: ['4+ years PM experience', 'Technical background', 'Data engineering knowledge', 'SQL expertise', 'API design experience'],
-      match_reasoning: 'Moderate match. SQL skills align well, but the role requires deeper technical/data engineering background. FinTech domain is a plus but the infrastructure focus is a departure from candidate\'s product strategy background.',
+      match_reasoning: 'Moderate match. SQL skills align well, but the role requires deeper technical/data engineering background. Located in San Francisco, matching preference.',
       application_url: 'https://squareup.com/careers/pm-data',
       posted_date: '2025-02-08',
+      location: 'San Francisco, CA',
     },
     {
       job_title: 'Associate Product Manager, Lending',
@@ -122,15 +135,16 @@ const SAMPLE_RESULTS: JobSearchResponse = {
       match_score: 55,
       job_description_summary: 'Support the lending product team in defining features for personal loan and refinance products. Assist in market research, requirements gathering, and sprint planning.',
       key_requirements: ['2+ years PM experience', 'Financial services interest', 'Basic SQL', 'Communication skills', 'Attention to detail'],
-      match_reasoning: 'FinTech domain matches, but this is a more junior role than candidate\'s current level. The Associate PM title represents a step down from current Product Manager role. Skills match but experience level is overqualified.',
+      match_reasoning: 'FinTech domain matches, but this is a more junior role than candidate\'s current level. Located in Salt Lake City, not matching preferred San Francisco location.',
       application_url: 'https://sofi.com/careers/apm-lending',
       posted_date: '2025-02-05',
+      location: 'Salt Lake City, UT',
     },
   ],
   total_found: 23,
   filtered_count: 2,
   companies_searched: ['Stripe', 'Plaid', 'Robinhood', 'Square', 'SoFi', 'Affirm', 'Brex', 'Chime'],
-  ranking_summary: 'Found 23 matching positions across 8 FinTech companies. 2 previously applied positions were filtered out. Top matches are concentrated at Stripe and Plaid, which closely align with your product management experience and FinTech domain focus. Your SQL and data analytics skills are highly sought after in this space.',
+  ranking_summary: 'Found 23 matching positions across 8 FinTech companies in and around San Francisco. 2 previously applied positions were filtered out. Top matches are concentrated at Stripe and Plaid, which closely align with your product management experience, FinTech domain focus, and preferred San Francisco location. Your resume highlights strong SQL, data analytics, and leadership skills that are highly sought after.',
 }
 
 // ---- Error Boundary ----
@@ -335,6 +349,7 @@ function JobResultCard({ job }: { job: RankedJob }) {
   const reasoning = job?.match_reasoning ?? ''
   const url = job?.application_url ?? ''
   const postedDate = job?.posted_date ?? ''
+  const location = job?.location ?? ''
 
   return (
     <Card className="bg-card border-border shadow-lg hover:shadow-xl transition-shadow duration-300">
@@ -342,9 +357,16 @@ function JobResultCard({ job }: { job: RankedJob }) {
         <div className="flex items-start justify-between gap-4 mb-3">
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-bold text-foreground tracking-tight leading-snug">{title}</h3>
-            <div className="flex items-center gap-2 mt-1.5">
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               <HiBuildingOffice2 className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="text-sm text-muted-foreground">{company}</span>
+              {location && (
+                <>
+                  <span className="text-muted-foreground/40">|</span>
+                  <HiMapPin className="h-3.5 w-3.5 text-[hsl(160,70%,40%)] shrink-0" />
+                  <span className="text-xs text-[hsl(160,70%,50%)] font-medium">{location}</span>
+                </>
+              )}
               {postedDate && (
                 <>
                   <span className="text-muted-foreground/40">|</span>
@@ -446,7 +468,7 @@ function EmptyState() {
       </div>
       <h3 className="text-lg font-semibold text-foreground mb-2 tracking-tight">Discover Your Next Role</h3>
       <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
-        Enter your profile details on the left and click Find Matching Jobs to discover opportunities tailored to your experience.
+        Upload your resume, fill in your preferences, and click Find Matching Jobs to discover opportunities tailored to your experience and location.
       </p>
     </div>
   )
@@ -497,9 +519,11 @@ export default function Page() {
     yearsOfExperience: '',
     targetDomain: '',
     targetRole: '',
+    preferredLocation: '',
     skills: [],
     targetCompanies: [],
     appliedJobIds: '',
+    resumeText: '',
   })
 
   const [loading, setLoading] = useState(false)
@@ -509,6 +533,13 @@ export default function Page() {
   const [optionalOpen, setOptionalOpen] = useState(false)
   const [showSample, setShowSample] = useState(false)
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null)
+
+  // Resume upload state
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [resumeUploading, setResumeUploading] = useState(false)
+  const [resumeAssetIds, setResumeAssetIds] = useState<string[]>([])
+  const [resumeUploadMsg, setResumeUploadMsg] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const displayForm = showSample && !results ? SAMPLE_FORM : formData
   const displayResults = showSample && !results ? SAMPLE_RESULTS : results
@@ -533,6 +564,53 @@ export default function Page() {
     setFormData((prev) => ({ ...prev, targetCompanies: prev.targetCompanies.filter((_, i) => i !== index) }))
   }, [])
 
+  // Resume upload handler
+  const handleResumeUpload = useCallback(async (file: File) => {
+    setResumeFile(file)
+    setResumeUploading(true)
+    setResumeUploadMsg(null)
+
+    try {
+      const uploadResult = await uploadFiles(file)
+      if (uploadResult.success && uploadResult.asset_ids.length > 0) {
+        setResumeAssetIds(uploadResult.asset_ids)
+        setResumeUploadMsg(`${file.name} uploaded successfully`)
+        setFormData((prev) => ({
+          ...prev,
+          resumeText: `Resume uploaded: ${file.name} (Asset ID: ${uploadResult.asset_ids.join(', ')})`,
+        }))
+      } else {
+        setResumeUploadMsg(`Upload failed: ${uploadResult.error || 'Unknown error'}`)
+        setResumeFile(null)
+      }
+    } catch (err) {
+      setResumeUploadMsg('Upload failed. Please try again.')
+      setResumeFile(null)
+    } finally {
+      setResumeUploading(false)
+    }
+  }, [])
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (file) {
+        handleResumeUpload(file)
+      }
+    },
+    [handleResumeUpload]
+  )
+
+  const removeResume = useCallback(() => {
+    setResumeFile(null)
+    setResumeAssetIds([])
+    setResumeUploadMsg(null)
+    setFormData((prev) => ({ ...prev, resumeText: '' }))
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }, [])
+
   const handleSearch = useCallback(async () => {
     const activeForm = showSample && !results ? SAMPLE_FORM : formData
     if (!activeForm.targetRole.trim() && !activeForm.targetDomain.trim()) {
@@ -545,6 +623,14 @@ export default function Page() {
     setResults(null)
     setActiveAgentId(AGENT_ID)
 
+    const resumeSection = activeForm.resumeText
+      ? `\nResume/CV Content:\n${activeForm.resumeText}\n`
+      : ''
+
+    const locationSection = activeForm.preferredLocation
+      ? `Preferred Job Location: ${activeForm.preferredLocation}`
+      : 'Preferred Job Location: Open to all locations'
+
     const message = `
 Find matching jobs for the following profile:
 
@@ -553,15 +639,17 @@ Current Role: ${activeForm.currentRole || 'Not specified'}
 Years of Experience: ${activeForm.yearsOfExperience || 'Not specified'}
 Target Domain: ${activeForm.targetDomain || 'Not specified'}
 Target Job Role: ${activeForm.targetRole || 'Not specified'}
+${locationSection}
 Skills/Requirements: ${activeForm.skills.length > 0 ? activeForm.skills.join(', ') : 'Not specified'}
 ${activeForm.targetCompanies.length > 0 ? `Target Companies: ${activeForm.targetCompanies.join(', ')}` : ''}
 ${activeForm.appliedJobIds.trim() ? `Previously Applied Job IDs to exclude: ${activeForm.appliedJobIds}` : ''}
-
-Please search for matching job openings, evaluate them against this profile, and return a ranked list with match scores.
+${resumeSection}
+Please search for matching job openings in or near the preferred location (include remote positions too), evaluate them against this profile and resume, and return a ranked list with match scores. Include the job location for each result.
 `.trim()
 
     try {
-      const result = await callAIAgent(message, AGENT_ID)
+      const agentOptions = resumeAssetIds.length > 0 ? { assets: resumeAssetIds } : undefined
+      const result = await callAIAgent(message, AGENT_ID, agentOptions)
 
       if (result.success) {
         let data = result?.response?.result as any
@@ -619,7 +707,7 @@ Please search for matching job openings, evaluate them against this profile, and
       setLoading(false)
       setActiveAgentId(null)
     }
-  }, [formData, showSample, results])
+  }, [formData, showSample, results, resumeAssetIds])
 
   const sortedJobs = React.useMemo(() => {
     const jobs = Array.isArray(displayResults?.ranked_jobs) ? [...displayResults.ranked_jobs] : []
@@ -658,9 +746,6 @@ Please search for matching job openings, evaluate them against this profile, and
                 checked={showSample}
                 onCheckedChange={(checked) => {
                   setShowSample(checked)
-                  if (!checked) {
-                    // keep results if they exist
-                  }
                 }}
               />
             </div>
@@ -672,6 +757,81 @@ Please search for matching job openings, evaluate them against this profile, and
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Left Panel — Input Form */}
             <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 space-y-4">
+
+              {/* Resume Upload Section */}
+              <Card className="bg-card border-border shadow-md">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <HiDocumentText className="h-4 w-4 text-[hsl(160,70%,40%)]" />
+                    <CardTitle className="text-sm font-semibold tracking-tight">Resume / CV</CardTitle>
+                  </div>
+                  <CardDescription className="text-xs">Upload your resume for better job matching</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="resume-upload"
+                  />
+
+                  {!resumeFile ? (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={resumeUploading}
+                      className="w-full border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center gap-2 hover:border-[hsl(160,70%,40%)]/50 hover:bg-secondary/30 transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                        <HiArrowUpTray className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm text-muted-foreground font-medium">Click to upload resume</p>
+                      <p className="text-xs text-muted-foreground/70">PDF, DOC, DOCX, or TXT</p>
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-3 p-3 bg-secondary/40 rounded-xl border border-border">
+                      <div className="w-9 h-9 rounded-lg bg-[hsl(160,70%,40%)]/15 flex items-center justify-center shrink-0">
+                        {resumeUploading ? (
+                          <div className="h-4 w-4 border-2 border-[hsl(160,70%,40%)] border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <HiCheckCircle className="h-5 w-5 text-[hsl(160,70%,40%)]" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{resumeFile.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {resumeUploading ? 'Uploading...' : resumeUploadMsg || 'Ready'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeResume}
+                        className="p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0"
+                      >
+                        <HiXMark className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Or paste resume text */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="resumeText" className="text-xs text-muted-foreground">
+                      Or paste your resume text
+                    </Label>
+                    <Textarea
+                      id="resumeText"
+                      placeholder="Paste your resume or key highlights here..."
+                      rows={4}
+                      value={showSample && !results ? displayForm.resumeText : formData.resumeText}
+                      onChange={(e) => updateField('resumeText', e.target.value)}
+                      className="bg-[hsl(160,22%,20%)] border-border text-sm"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Profile Section */}
               <Card className="bg-card border-border shadow-md">
                 <CardHeader className="pb-3">
@@ -753,6 +913,21 @@ Please search for matching job openings, evaluate them against this profile, and
                       placeholder="e.g., Senior Product Manager"
                       value={showSample && !results ? displayForm.targetRole : formData.targetRole}
                       onChange={(e) => updateField('targetRole', e.target.value)}
+                      className="bg-[hsl(160,22%,20%)] border-border"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="preferredLocation" className="text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <HiMapPin className="h-3.5 w-3.5 text-[hsl(160,70%,40%)]" />
+                        Preferred Location
+                      </span>
+                    </Label>
+                    <Input
+                      id="preferredLocation"
+                      placeholder="e.g., San Francisco, CA / Remote / New York"
+                      value={showSample && !results ? displayForm.preferredLocation : formData.preferredLocation}
+                      onChange={(e) => updateField('preferredLocation', e.target.value)}
                       className="bg-[hsl(160,22%,20%)] border-border"
                     />
                   </div>

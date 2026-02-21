@@ -12,7 +12,8 @@
         "job_description": "string",
         "key_requirements": ["string"],
         "application_url": "string",
-        "posted_date": "string"
+        "posted_date": "string",
+        "location": "string"
       }
     ],
     "companies_searched": ["string"],
