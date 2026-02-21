@@ -1,0 +1,25 @@
+{
+  "agent_id": "6999596f938bc0103dbe0bec",
+  "agent_name": "Job Search Coordinator",
+  "agent_type": "json",
+  "accessor": "json",
+  "has_module_outputs": false,
+  "response_schema": {
+    "ranked_jobs": [
+      {
+        "job_title": "string",
+        "company_name": "string",
+        "match_score": "number",
+        "job_description_summary": "string",
+        "key_requirements": ["string"],
+        "match_reasoning": "string",
+        "application_url": "string",
+        "posted_date": "string"
+      }
+    ],
+    "total_found": "number",
+    "filtered_count": "number",
+    "companies_searched": ["string"],
+    "ranking_summary": "string"
+  }
+}

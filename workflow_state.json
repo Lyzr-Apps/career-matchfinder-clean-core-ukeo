@@ -1,0 +1,37 @@
+{
+  "app_name": "JobMatch Scout",
+  "pattern": "manager-subagent",
+  "agents": {
+    "discovery_agent": {
+      "agent_id": "6999595d7929f75fa2684e9f",
+      "name": "Company & Job Discovery Agent",
+      "type": "sub-agent",
+      "provider": "perplexity",
+      "model": "sonar-pro"
+    },
+    "ranking_agent": {
+      "agent_id": "6999595d37b6d94b64a41ba5",
+      "name": "Job Match & Ranking Agent",
+      "type": "sub-agent",
+      "provider": "openai",
+      "model": "gpt-4.1"
+    },
+    "manager_agent": {
+      "agent_id": "6999596f938bc0103dbe0bec",
+      "name": "Job Search Coordinator",
+      "type": "manager",
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "managed_agents": [
+        "6999595d7929f75fa2684e9f",
+        "6999595d37b6d94b64a41ba5"
+      ]
+    }
+  },
+  "primary_agent_id": "6999596f938bc0103dbe0bec",
+  "all_agent_ids": [
+    "6999595d7929f75fa2684e9f",
+    "6999595d37b6d94b64a41ba5",
+    "6999596f938bc0103dbe0bec"
+  ]
+}

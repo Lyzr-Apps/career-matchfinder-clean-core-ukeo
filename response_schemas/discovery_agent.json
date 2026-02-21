@@ -1,0 +1,21 @@
+{
+  "agent_id": "6999595d7929f75fa2684e9f",
+  "agent_name": "Company & Job Discovery Agent",
+  "agent_type": "json",
+  "accessor": "json",
+  "has_module_outputs": false,
+  "response_schema": {
+    "discovered_jobs": [
+      {
+        "job_title": "string",
+        "company_name": "string",
+        "job_description": "string",
+        "key_requirements": ["string"],
+        "application_url": "string",
+        "posted_date": "string"
+      }
+    ],
+    "companies_searched": ["string"],
+    "search_summary": "string"
+  }
+}

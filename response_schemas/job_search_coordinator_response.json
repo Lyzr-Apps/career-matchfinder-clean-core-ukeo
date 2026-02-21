@@ -1,0 +1,52 @@
+{
+  "agent_name": "Job Search Coordinator",
+  "agent_id": "6999596f938bc0103dbe0bec",
+  "description": "Coordinates the discovery and matching workflow. Routes user profile and preferences to sub-agents, aggregates discovered jobs with match analysis, and returns the final ranked list.",
+  "agent_type": "json",
+  "accessor": "result",
+  "auto_generated": true,
+  "response_schema": {
+    "ranked_jobs": [
+      {
+        "job_title": "string",
+        "company_name": "string",
+        "match_score": "number",
+        "job_description_summary": "string",
+        "key_requirements": [
+          "string"
+        ],
+        "match_reasoning": "string",
+        "application_url": "string",
+        "posted_date": "string"
+      }
+    ],
+    "total_found": "number",
+    "filtered_count": "number",
+    "companies_searched": [
+      "string"
+    ],
+    "ranking_summary": "string"
+  },
+  "example_response": {
+    "ranked_jobs": [
+      {
+        "job_title": "sample string",
+        "company_name": "sample string",
+        "match_score": 0,
+        "job_description_summary": "sample string",
+        "key_requirements": [
+          "sample string"
+        ],
+        "match_reasoning": "sample string",
+        "application_url": "sample string",
+        "posted_date": "sample string"
+      }
+    ],
+    "total_found": 0,
+    "filtered_count": 0,
+    "companies_searched": [
+      "sample string"
+    ],
+    "ranking_summary": "sample string"
+  }
+}

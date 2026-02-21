@@ -1,0 +1,74 @@
+{
+  "nodes": [
+    {
+      "id": "input_node",
+      "type": "Input",
+      "label": "User Profile & Preferences",
+      "nodeCategory": "input"
+    },
+    {
+      "id": "manager_agent",
+      "type": "Agent",
+      "label": "Job Search Coordinator",
+      "nodeCategory": "agent"
+    },
+    {
+      "id": "discovery_agent",
+      "type": "Agent",
+      "label": "Company & Job Discovery Agent",
+      "nodeCategory": "agent"
+    },
+    {
+      "id": "ranking_agent",
+      "type": "Agent",
+      "label": "Job Match & Ranking Agent",
+      "nodeCategory": "agent"
+    },
+    {
+      "id": "output_node",
+      "type": "Output",
+      "label": "Ranked Job Results",
+      "nodeCategory": "end"
+    }
+  ],
+  "edges": [
+    { "source": "input_node", "target": "manager_agent" },
+    { "source": "manager_agent", "target": "discovery_agent" },
+    { "source": "manager_agent", "target": "ranking_agent" },
+    { "source": "discovery_agent", "target": "output_node" },
+    { "source": "ranking_agent", "target": "output_node" }
+  ],
+  "agents": {
+    "discovery_agent": {
+      "agent_id": "6999595d7929f75fa2684e9f",
+      "name": "Company & Job Discovery Agent",
+      "provider": "perplexity",
+      "model": "sonar-pro",
+      "temperature": 0.2,
+      "top_p": 1,
+      "role": "sub-agent"
+    },
+    "ranking_agent": {
+      "agent_id": "6999595d37b6d94b64a41ba5",
+      "name": "Job Match & Ranking Agent",
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "temperature": 0.3,
+      "top_p": 1,
+      "role": "sub-agent"
+    },
+    "manager_agent": {
+      "agent_id": "6999596f938bc0103dbe0bec",
+      "name": "Job Search Coordinator",
+      "provider": "openai",
+      "model": "gpt-4.1",
+      "temperature": 0.3,
+      "top_p": 1,
+      "role": "manager",
+      "managed_agents": [
+        "6999595d7929f75fa2684e9f",
+        "6999595d37b6d94b64a41ba5"
+      ]
+    }
+  }
+}
